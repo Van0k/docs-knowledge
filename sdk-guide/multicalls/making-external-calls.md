@@ -34,8 +34,8 @@ External calls flow through adapters:
 ### Step 1: Get Adapter Address
 
 ```typescript
-import { getContract } from 'viem';
-import { creditManagerAbi } from '@gearbox-protocol/sdk';
+import { getContract } from "viem";
+import { creditManagerAbi } from "@gearbox-protocol/sdk";
 
 const creditManager = getContract({
   address: cmAddress,
@@ -49,22 +49,22 @@ const uniswapV3Adapter = await creditManager.read.contractToAdapter([
 ]);
 
 // Returns 0x0 if no adapter exists for this protocol
-if (uniswapV3Adapter === '0x0000000000000000000000000000000000000000') {
-  throw new Error('No adapter for this protocol');
+if (uniswapV3Adapter === "0x0000000000000000000000000000000000000000") {
+  throw new Error("No adapter for this protocol");
 }
 ```
 
 ### Step 2: Encode the Adapter Call
 
 ```typescript
-import { encodeFunctionData } from 'viem';
-import { uniswapV3AdapterAbi } from '@gearbox-protocol/integrations-v3';
+import { encodeFunctionData } from "viem";
+import { uniswapV3AdapterAbi } from "@gearbox-protocol/integrations-v3";
 
 const swapParams = {
   tokenIn: usdcAddress,
   tokenOut: wethAddress,
   fee: 500,
-  recipient: '0x0000000000000000000000000000000000000000', // Adapter overrides this
+  recipient: "0x0000000000000000000000000000000000000000", // Adapter overrides this
   deadline: BigInt(Math.floor(Date.now() / 1000) + 3600),
   amountIn: 50_000n * 10n ** 6n,
   amountOutMinimum: 24n * 10n ** 18n, // Slippage protection
@@ -76,7 +76,7 @@ const calls = [
     target: uniswapV3Adapter,
     callData: encodeFunctionData({
       abi: uniswapV3AdapterAbi,
-      functionName: 'exactInputSingle',
+      functionName: "exactInputSingle",
       args: [swapParams],
     }),
   },
@@ -86,12 +86,12 @@ const calls = [
 ### Complete Example: Swap with Slippage Protection
 
 ```typescript
-import { encodeFunctionData } from 'viem';
+import { encodeFunctionData } from "viem";
 import {
   GearboxSDK,
   createCreditAccountService,
   iCreditFacadeV300MulticallAbi,
-} from '@gearbox-protocol/sdk';
+} from "@gearbox-protocol/sdk";
 
 const sdk = await GearboxSDK.attach({ client, marketConfigurators: [] });
 const service = createCreditAccountService(sdk, 310);
@@ -114,7 +114,7 @@ const calls = [
     target: market.creditFacade.address,
     callData: encodeFunctionData({
       abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'storeExpectedBalances',
+      functionName: "storeExpectedBalances",
       args: [[{ token: wethAddress, amount: 99n * 10n ** 18n }]], // Expect ~100 WETH
     }),
   },
@@ -124,7 +124,7 @@ const calls = [
     target: uniswapV3Adapter,
     callData: encodeFunctionData({
       abi: uniswapV3AdapterAbi,
-      functionName: 'exactInputSingle',
+      functionName: "exactInputSingle",
       args: [swapParams],
     }),
   },
@@ -134,17 +134,24 @@ const calls = [
     target: market.creditFacade.address,
     callData: encodeFunctionData({
       abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'compareBalances',
+      functionName: "compareBalances",
       args: [],
     }),
   },
 
   // Set quota for received token (SDK helper)
-  service.prepareUpdateQuota(wethAddress, 250_000n * 10n ** 6n, 250_000n * 10n ** 6n),
+  service.prepareUpdateQuota(
+    wethAddress,
+    250_000n * 10n ** 6n,
+    250_000n * 10n ** 6n,
+  ),
 ];
 
 // Approve collateral to Credit Manager
-await usdcContract.write.approve([market.creditManager.address, 50_000n * 10n ** 6n]);
+await usdcContract.write.approve([
+  market.creditManager.address,
+  50_000n * 10n ** 6n,
+]);
 
 // Execute
 await market.creditFacade.write.openCreditAccount([ownerAddress, calls, 0n]);
@@ -172,10 +179,10 @@ SDK exports core ABIs, but adapter ABIs often need separate import:
 
 ```typescript
 // Core ABIs from SDK
-import { iCreditFacadeV300MulticallAbi } from '@gearbox-protocol/sdk';
+import { iCreditFacadeV300MulticallAbi } from "@gearbox-protocol/sdk";
 
 // Adapter ABIs from integrations package
-import { uniswapV3AdapterAbi } from '@gearbox-protocol/integrations-v3';
+import { uniswapV3AdapterAbi } from "@gearbox-protocol/integrations-v3";
 ```
 
 Check what's available in `@gearbox-protocol/integrations-v3`.
@@ -187,9 +194,9 @@ An adapter must exist for each protocol you want to interact with. Check with `c
 ```typescript
 const adapter = await creditManager.read.contractToAdapter([protocolAddress]);
 
-if (adapter === '0x0000000000000000000000000000000000000000') {
+if (adapter === "0x0000000000000000000000000000000000000000") {
   // No adapter - this protocol isn't integrated
-  throw new Error('Protocol not supported');
+  throw new Error("Protocol not supported");
 }
 ```
 
@@ -200,7 +207,7 @@ Many DEX functions have a `recipient` parameter. Adapters override this to ensur
 ```typescript
 // You can pass any address here - adapter ignores it
 const swapParams = {
-  recipient: '0x0000000000000000000000000000000000000000', // Will be overridden
+  recipient: "0x0000000000000000000000000000000000000000", // Will be overridden
   // ...
 };
 ```
@@ -210,11 +217,7 @@ const swapParams = {
 External calls are vulnerable to sandwich attacks. Always wrap swaps with slippage checks:
 
 ```typescript
-const calls = [
-  storeExpectedBalances,
-  adapterSwapCall,
-  compareBalances,
-];
+const calls = [storeExpectedBalances, adapterSwapCall, compareBalances];
 ```
 
 ### Adapter Function Signatures May Differ
@@ -231,16 +234,12 @@ Adapter functions may have slightly different signatures than the underlying pro
 
 Read the adapter interface documentation for exact signatures.
 
-### Token Enable/Disable is Automatic
+### Quoted tokens still need quota
 
-After adapter calls, tokens are automatically enabled/disabled based on balance changes:
-- Balance goes from 0 to non-zero: Token enabled
-- Balance goes from non-zero to 0: Token disabled
-
-You usually don't need manual `enableToken`/`disableToken` after adapter calls.
+Adapter swaps can change balances, but **quota tokens** only count toward collateral after a successful `updateQuota` (with active debt). Plan the multicall so quota updates happen when you intend an asset to contribute to health.
 
 ## See Also
 
 - [Controlling Slippage](./controlling-slippage.md) - Protect your swaps
 - [Multicalls Overview](../multicalls.md) - Combining SDK helpers with manual encoding
-- [Enabling/Disabling Tokens](./enabling-disabling-tokens.md) - Manual token management
+- [Updating Quotas](./updating-quotas.md) - Enable collateral for quota tokens

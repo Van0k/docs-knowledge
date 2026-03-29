@@ -2,233 +2,139 @@
 
 Push fresh price data for on-demand oracles (Pyth, Redstone).
 
-> For Solidity implementation, see [Updating On-Demand Price Feeds](../../solidity-guide/multicalls.md#updating-on-demand-price-feeds).
+> For Solidity implementation, see [Updating Price Feeds](../../solidity-guide/multicalls/updating-price-feeds.md).
 
 ## Why
 
 You update price feeds when:
 
-- **Using on-demand oracles** - Pyth and Redstone require fresh data with each transaction
-- **Multicalls fail** - "Stale price" errors indicate missing price updates
-- **Withdrawals** - Reserve price feeds may also need updates under safe pricing
+- **Using on-demand oracles** - Pyth and Redstone require fresh payloads with each transaction
+- **Multicalls fail** - Stale-price style errors often mean missing updates
+- **Withdrawals** - Safe pricing may require both main and reserve feeds to be current
 
-Some tokens use "pull-based" oracles that don't update automatically. You must push fresh price data before operations that need it.
+Some tokens use pull-based oracles that do not update automatically. You must push payloads before operations that depend on them.
 
 ## What
 
-`onDemandPriceUpdate` pushes oracle data to the price feed:
+`onDemandPriceUpdates(PriceUpdate[] updates)` forwards an array of updates to the price layer. Each element is a `PriceUpdate` struct (from `IPriceFeedStore`):
 
-1. You obtain signed price data from the oracle provider (off-chain)
-2. You include the price update as the FIRST call in your multicall
-3. Credit Facade forwards the data to the price feed contract
-4. The price feed validates the signature and updates
+| Field       | Type    | Description                                                    |
+| ----------- | ------- | -------------------------------------------------------------- |
+| `priceFeed` | address | On-chain price feed contract to update (not the token address) |
+| `data`      | bytes   | Oracle-specific payload (e.g. Pyth VAA, Redstone package)      |
 
-**Critical rule:** All price updates must be at the **beginning** of the calls array. Any `onDemandPriceUpdate` after another call type will revert.
+**Critical rule:** The `onDemandPriceUpdates` call must be the **first** entry in the multicall. If any other call runs before it, the facade reverts.
+
+You can pass **multiple** `PriceUpdate` structs in a **single** `onDemandPriceUpdates` call (preferred) instead of issuing several facade calls.
 
 ## How
 
 ```typescript
-import { encodeFunctionData } from 'viem';
-import { iCreditFacadeV300MulticallAbi } from '@gearbox-protocol/sdk';
+import { encodeFunctionData } from "viem";
+import { iCreditFacadeV300MulticallAbi } from "@gearbox-protocol/sdk";
 
-// Get price data from oracle provider (e.g., Pyth)
-const priceData = await pythClient.getPriceUpdateData([feedId]);
+// Obtain payloads off-chain (example: Pyth Hermes)
+const mainFeedData = await pythClient.getPriceUpdateData([mainFeedId]);
+
+const priceUpdates = [
+  {
+    priceFeed: wethMainPriceFeedAddress,
+    data: mainFeedData[0] as `0x${string}`,
+  },
+];
 
 const calls = [
-  // Price update MUST be first
   {
     target: creditFacadeAddress,
     callData: encodeFunctionData({
       abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'onDemandPriceUpdate',
-      args: [
-        tokenAddress,  // Token to update price for
-        false,         // reserve: false = main feed, true = reserve feed
-        priceData,     // Signed price data from oracle
-      ],
+      functionName: "onDemandPriceUpdates",
+      args: [priceUpdates],
     }),
   },
-
-  // Now other operations
   service.prepareAddCollateral(usdcAddress, amount),
   service.prepareIncreaseDebt(debtAmount),
 ];
 ```
 
-### Multiple Price Updates
-
-Update several tokens at once (all must be at the start):
+### Multiple feeds in one call
 
 ```typescript
-const calls = [
-  // All price updates first
-  {
-    target: creditFacadeAddress,
-    callData: encodeFunctionData({
-      abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'onDemandPriceUpdate',
-      args: [token1, false, priceData1],
-    }),
-  },
-  {
-    target: creditFacadeAddress,
-    callData: encodeFunctionData({
-      abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'onDemandPriceUpdate',
-      args: [token2, false, priceData2],
-    }),
-  },
+const priceUpdates = [
+  { priceFeed: feedAddress1, data: payload1 as `0x${string}` },
+  { priceFeed: feedAddress2, data: payload2 as `0x${string}` },
+];
 
-  // Then other operations
-  // ...
+const calls = [
+  {
+    target: creditFacadeAddress,
+    callData: encodeFunctionData({
+      abi: iCreditFacadeV300MulticallAbi,
+      functionName: "onDemandPriceUpdates",
+      args: [priceUpdates],
+    }),
+  },
+  // ...other operations
 ];
 ```
 
-### Updating Reserve Feed (For Withdrawals)
+### Main and reserve feeds (e.g. withdrawals / safe pricing)
 
-Withdrawals trigger safe pricing, which uses both main and reserve feeds:
+Safe pricing uses main and reserve feeds where configured. Supply **one `PriceUpdate` per price feed contract** that needs a fresh payload:
 
 ```typescript
-const calls = [
-  // Main feed update
-  {
-    target: creditFacadeAddress,
-    callData: encodeFunctionData({
-      abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'onDemandPriceUpdate',
-      args: [tokenAddress, false, mainPriceData],  // reserve = false
-    }),
-  },
-  // Reserve feed update
-  {
-    target: creditFacadeAddress,
-    callData: encodeFunctionData({
-      abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'onDemandPriceUpdate',
-      args: [tokenAddress, true, reservePriceData],  // reserve = true
-    }),
-  },
-
-  // Now the withdrawal will work with safe pricing
-  service.prepareWithdrawCollateral(otherToken, amount, recipient),
+const priceUpdates = [
+  { priceFeed: tokenMainPriceFeed, data: mainPayload as `0x${string}` },
+  { priceFeed: tokenReservePriceFeed, data: reservePayload as `0x${string}` },
 ];
 ```
 
-### Detecting Which Feeds Need Updates
+Resolve `tokenMainPriceFeed` / `tokenReservePriceFeed` from your market’s price oracle configuration (compressor or config), not from the token address alone.
+
+### Discovering feeds that need updates
 
 ```typescript
-import { priceFeedCompressorAbi } from '@gearbox-protocol/sdk';
+import { priceFeedCompressorAbi } from "@gearbox-protocol/sdk";
 
 const feedInfo = await client.readContract({
   address: priceFeedCompressorAddress,
   abi: priceFeedCompressorAbi,
-  functionName: 'getUpdatablePriceFeeds',
+  functionName: "getUpdatablePriceFeeds",
   args: [creditManagerAddress],
 });
 
-// feedInfo contains tokens that need on-demand updates
-const tokensNeedingUpdate = feedInfo.filter(f => f.needsUpdate);
+const tokensNeedingUpdate = feedInfo.filter((f) => f.needsUpdate);
 ```
 
 ## Gotchas
 
-### Price Updates MUST Be First
-
-This is the most common mistake. Price updates after any other call type revert:
+### Must be first
 
 ```typescript
-// WRONG - price update after addCollateral
+// WRONG — price updates after another call revert
 const calls = [
   service.prepareAddCollateral(token, amount),
-  onDemandPriceUpdate, // Reverts!
+  priceUpdatesCall, // reverts
 ];
 
-// CORRECT - price update first
-const calls = [
-  onDemandPriceUpdate,
-  service.prepareAddCollateral(token, amount),
-];
+// CORRECT
+const calls = [priceUpdatesCall, service.prepareAddCollateral(token, amount)];
 ```
 
-### Fresh Data Required
+### `priceFeed` is not the token
 
-Price data has a short validity window (usually a few minutes). Generate fresh data right before the transaction:
+Encoding must target the **price feed contract** address your market uses for that asset. The oracle SDK returns `bytes` payloads; pairing them with the wrong `priceFeed` address fails validation on-chain.
 
-```typescript
-// Get price data immediately before building transaction
-const priceData = await pythClient.getPriceUpdateData([feedId]);
+### Fresh payloads
 
-// Use it right away
-const calls = [
-  onDemandPriceUpdate(token, false, priceData),
-  // ...
-];
+Generate update data immediately before the transaction. Cached payloads often expire within minutes.
 
-// DON'T cache price data for later
-```
+### Not every asset needs pull updates
 
-### Not All Tokens Need Updates
-
-Only tokens with on-demand price feeds need updates. Tokens using Chainlink or other push-based oracles don't need `onDemandPriceUpdate`:
-
-```typescript
-// Check if token uses on-demand feed
-const priceFeed = await priceOracle.read.priceFeedsRaw([tokenAddress, false]);
-const feedType = priceFeed.feedType;
-
-// Only PYTH and REDSTONE feeds need updates
-if (feedType === 'PYTH' || feedType === 'REDSTONE') {
-  // Include price update
-}
-```
-
-### Disabled Tokens Don't Need Updates
-
-If a token will be disabled by the end of the multicall, you don't need to update its price:
-
-```typescript
-// weth is getting swapped entirely (will be disabled)
-const calls = [
-  // No need for WETH price update since it's being disabled
-  service.prepareAddCollateral(usdcAddress, amount),
-  adapterSwap(weth, usdc, entireBalance),
-  // WETH will auto-disable after swap
-];
-```
-
-### Off-Chain Data Retrieval
-
-You need to fetch price data from the oracle's API before building your transaction. This is protocol-specific:
-
-```typescript
-// Pyth example
-const pythConnection = new PriceServiceConnection("https://hermes.pyth.network");
-const priceUpdateData = await pythConnection.getPriceFeedsUpdateData([feedId]);
-
-// Redstone example (simplified)
-const redstonePayload = await getRedstonePayload([tokenSymbol]);
-```
-
-Your contract or frontend must handle this off-chain step.
-
-### Contracts Need Price Data Input
-
-If you're building a contract that interacts with Gearbox, it must accept price data as an input parameter:
-
-```typescript
-// Your contract function signature
-function executeWithGearbox(
-  bytes[] calldata priceUpdates,  // Must be passed from frontend
-  // other params
-) external {
-  // Build multicall with price updates first
-}
-```
-
-Contracts cannot fetch price data themselves - it must come from off-chain.
+Chainlink-style feeds that update on-chain independently usually do not need `onDemandPriceUpdates`. Use market metadata / compressor output to see which feeds are on-demand.
 
 ## See Also
 
-- [Controlling Slippage](./controlling-slippage.md) - Stale prices can cause slippage issues
-- [Withdrawing Collateral](./withdrawing-collateral.md) - May need reserve feed updates
-- [Collateral Check Params](./collateral-check-params.md) - Related to price feed behavior
+- [Controlling Slippage](./controlling-slippage.md) - Stale prices and sandwich risk
+- [Withdrawing Collateral](./withdrawing-collateral.md) - Safe pricing and feeds
+- [Collateral Check Params](./collateral-check-params.md) - Health checks and pricing modes

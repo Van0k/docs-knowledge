@@ -9,7 +9,7 @@ Build and execute multicalls using SDK service helpers.
 The SDK provides structured multicall builders via `createCreditAccountService`:
 
 ```typescript
-import { GearboxSDK, createCreditAccountService } from '@gearbox-protocol/sdk';
+import { GearboxSDK, createCreditAccountService } from "@gearbox-protocol/sdk";
 
 const sdk = await GearboxSDK.attach({ client, marketConfigurators: [] });
 const service = createCreditAccountService(sdk, 310);
@@ -17,31 +17,32 @@ const service = createCreditAccountService(sdk, 310);
 
 ## Available Service Methods
 
-| Method | Operation |
-|--------|-----------|
-| `prepareAddCollateral(token, amount)` | Add collateral from wallet |
-| `prepareIncreaseDebt(amount)` | Borrow from pool |
-| `prepareDecreaseDebt(amount)` | Repay debt |
-| `prepareUpdateQuota(token, change, minQuota)` | Adjust token quota |
-| `prepareWithdrawCollateral(token, amount, to)` | Remove collateral |
+| Method                                         | Operation                  |
+| ---------------------------------------------- | -------------------------- |
+| `prepareAddCollateral(token, amount)`          | Add collateral from wallet |
+| `prepareIncreaseDebt(amount)`                  | Borrow from pool           |
+| `prepareDecreaseDebt(amount)`                  | Repay debt                 |
+| `prepareUpdateQuota(token, change, minQuota)`  | Adjust token quota         |
+| `prepareWithdrawCollateral(token, amount, to)` | Remove collateral          |
 
 ## Detailed Operation Guides
 
 For comprehensive documentation of each operation:
 
 **SDK Helper Operations:**
+
 - [Adding Collateral](multicalls/adding-collateral.md) - Transfer tokens with approval patterns
 - [Debt Management](multicalls/debt-management.md) - Borrowing, repayment, and constraints
 - [Updating Quotas](multicalls/updating-quotas.md) - Quota mechanics and limits
 - [Withdrawing Collateral](multicalls/withdrawing-collateral.md) - Safe pricing and health impact
 
 **Manual Encoding Operations:**
+
 - [Controlling Slippage](multicalls/controlling-slippage.md) - Balance delta protection
 - [Making External Calls](multicalls/making-external-calls.md) - Adapter interaction patterns
-- [Enabling/Disabling Tokens](multicalls/enabling-disabling-tokens.md) - Token mask management
 - [Updating Price Feeds](multicalls/updating-price-feeds.md) - On-demand oracle data
 - [Collateral Check Params](multicalls/collateral-check-params.md) - Health check optimization
-- [Revoke Allowances](multicalls/revoke-allowances.md) - Security cleanup
+- [Setting Bot Permissions](multicalls/set-bot-permissions.md) - Bot access control
 
 ## Building a Multicall
 
@@ -55,7 +56,11 @@ const calls = [
   service.prepareIncreaseDebt(40_000n * 10n ** 6n),
 
   // Set quota for destination token
-  service.prepareUpdateQuota(wethAddress, 50_000n * 10n ** 6n, 50_000n * 10n ** 6n),
+  service.prepareUpdateQuota(
+    wethAddress,
+    50_000n * 10n ** 6n,
+    50_000n * 10n ** 6n,
+  ),
 ];
 ```
 
@@ -66,10 +71,7 @@ const calls = [
 ```typescript
 const market = sdk.marketRegister.findByCreditManager(cmAddress);
 
-await market.creditFacade.write.multicall([
-  creditAccountAddress,
-  calls,
-]);
+await market.creditFacade.write.multicall([creditAccountAddress, calls]);
 ```
 
 ### Opening with Multicall
@@ -87,8 +89,8 @@ const hash = await market.creditFacade.write.openCreditAccount([
 For adapter calls or custom operations, combine SDK helpers with manual encoding:
 
 ```typescript
-import { encodeFunctionData } from 'viem';
-import { iCreditFacadeV300MulticallAbi } from '@gearbox-protocol/sdk';
+import { encodeFunctionData } from "viem";
+import { iCreditFacadeV300MulticallAbi } from "@gearbox-protocol/sdk";
 
 const calls = [
   // SDK helpers for standard operations
@@ -100,22 +102,28 @@ const calls = [
     target: uniswapV3Adapter,
     callData: encodeFunctionData({
       abi: uniswapV3AdapterAbi,
-      functionName: 'exactInputSingle',
-      args: [{
-        tokenIn: usdcAddress,
-        tokenOut: wethAddress,
-        fee: 500,
-        recipient: '0x0000000000000000000000000000000000000000', // Adapter overrides
-        deadline: BigInt(Math.floor(Date.now() / 1000) + 3600),
-        amountIn: 50_000n * 10n ** 6n,
-        amountOutMinimum: 0n,
-        sqrtPriceLimitX96: 0n,
-      }],
+      functionName: "exactInputSingle",
+      args: [
+        {
+          tokenIn: usdcAddress,
+          tokenOut: wethAddress,
+          fee: 500,
+          recipient: "0x0000000000000000000000000000000000000000", // Adapter overrides
+          deadline: BigInt(Math.floor(Date.now() / 1000) + 3600),
+          amountIn: 50_000n * 10n ** 6n,
+          amountOutMinimum: 0n,
+          sqrtPriceLimitX96: 0n,
+        },
+      ],
     }),
   },
 
   // SDK helper for quota
-  service.prepareUpdateQuota(wethAddress, 50_000n * 10n ** 6n, 50_000n * 10n ** 6n),
+  service.prepareUpdateQuota(
+    wethAddress,
+    50_000n * 10n ** 6n,
+    50_000n * 10n ** 6n,
+  ),
 ];
 ```
 
@@ -130,7 +138,7 @@ const calls = [
     target: creditFacadeAddress,
     callData: encodeFunctionData({
       abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'storeExpectedBalances',
+      functionName: "storeExpectedBalances",
       args: [[{ token: wethAddress, amount: minExpectedWeth }]],
     }),
   },
@@ -140,7 +148,7 @@ const calls = [
     target: uniswapV3Adapter,
     callData: encodeFunctionData({
       abi: uniswapV3AdapterAbi,
-      functionName: 'exactInputSingle',
+      functionName: "exactInputSingle",
       args: [swapParams],
     }),
   },
@@ -150,7 +158,7 @@ const calls = [
     target: creditFacadeAddress,
     callData: encodeFunctionData({
       abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'compareBalances',
+      functionName: "compareBalances",
       args: [],
     }),
   },
@@ -168,8 +176,15 @@ const calls = [
     target: creditFacadeAddress,
     callData: encodeFunctionData({
       abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'onDemandPriceUpdates',
-      args: [[{ token: wethAddress, reserve: false, data: priceData }]],
+      functionName: "onDemandPriceUpdates",
+      args: [
+        [
+          {
+            priceFeed: wethPriceFeedAddress,
+            data: priceData,
+          },
+        ],
+      ],
     }),
   },
 
@@ -184,8 +199,8 @@ const calls = [
 Retrieve adapter addresses from the Credit Manager:
 
 ```typescript
-import { getContract } from 'viem';
-import { creditManagerAbi } from '@gearbox-protocol/sdk';
+import { getContract } from "viem";
+import { creditManagerAbi } from "@gearbox-protocol/sdk";
 
 const creditManager = getContract({
   address: cmAddress,
@@ -206,9 +221,14 @@ import {
   GearboxSDK,
   createCreditAccountService,
   iCreditFacadeV300MulticallAbi,
-} from '@gearbox-protocol/sdk';
-import { encodeFunctionData, createPublicClient, createWalletClient, http } from 'viem';
-import { mainnet } from 'viem/chains';
+} from "@gearbox-protocol/sdk";
+import {
+  encodeFunctionData,
+  createPublicClient,
+  createWalletClient,
+  http,
+} from "viem";
+import { mainnet } from "viem/chains";
 
 async function leveragePosition() {
   const publicClient = createPublicClient({
@@ -235,7 +255,11 @@ async function leveragePosition() {
     service.prepareIncreaseDebt(40_000n * 10n ** 6n),
 
     // Set quota for final token
-    service.prepareUpdateQuota(targetToken, 50_000n * 10n ** 6n, 50_000n * 10n ** 6n),
+    service.prepareUpdateQuota(
+      targetToken,
+      50_000n * 10n ** 6n,
+      50_000n * 10n ** 6n,
+    ),
   ];
 
   // Execute
@@ -248,7 +272,7 @@ async function leveragePosition() {
   const hash = await walletClient.writeContract({
     address: market.creditFacade.address,
     abi: creditFacadeAbi,
-    functionName: 'openCreditAccount',
+    functionName: "openCreditAccount",
     args: [myAccount.address, calls, 0n],
   });
 

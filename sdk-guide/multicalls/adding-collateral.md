@@ -27,15 +27,13 @@ Adding collateral increases your account's total weighted value (TWV), which imp
 ## How
 
 ```typescript
-import { GearboxSDK, createCreditAccountService } from '@gearbox-protocol/sdk';
+import { GearboxSDK, createCreditAccountService } from "@gearbox-protocol/sdk";
 
 const sdk = await GearboxSDK.attach({ client, marketConfigurators: [] });
 const service = createCreditAccountService(sdk, 310);
 
 // Build the multicall
-const calls = [
-  service.prepareAddCollateral(usdcAddress, 10_000n * 10n ** 6n),
-];
+const calls = [service.prepareAddCollateral(usdcAddress, 10_000n * 10n ** 6n)];
 
 // First, approve to Credit Manager (not Facade!)
 const market = sdk.marketRegister.findByCreditManager(cmAddress);
@@ -60,8 +58,8 @@ await market.creditFacade.write.openCreditAccount([
 For EIP-2612 compatible tokens, you can avoid the separate approval transaction:
 
 ```typescript
-import { encodeFunctionData } from 'viem';
-import { iCreditFacadeV300MulticallAbi } from '@gearbox-protocol/sdk';
+import { encodeFunctionData } from "viem";
+import { iCreditFacadeV300MulticallAbi } from "@gearbox-protocol/sdk";
 
 // Sign permit message (details depend on your wallet setup)
 const { v, r, s, deadline } = await signPermit(/* ... */);
@@ -71,7 +69,7 @@ const calls = [
     target: creditFacadeAddress,
     callData: encodeFunctionData({
       abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'addCollateralWithPermit',
+      functionName: "addCollateralWithPermit",
       args: [tokenAddress, amount, deadline, v, r, s],
     }),
   },
@@ -103,9 +101,9 @@ const calls = [
 ];
 ```
 
-### Direct Transfers Don't Enable
+### Direct transfers are risky and do not replace `addCollateral`
 
-Sending tokens directly to a Credit Account (via `transfer`) does NOT enable them as collateral. You still need a multicall with `enableToken` to count them in the health factor.
+Sending tokens directly to a Credit Account (`transfer`) does not run `addCollateral` and does not set up quota. For quoted collateral, value still does not count toward health until you `updateQuota` with active debt. Prefer `addCollateral` (and quota updates when needed) inside a multicall instead of relying on manual transfers.
 
 ### Invalid Collateral Tokens
 

@@ -5,6 +5,7 @@ Build bots that monitor credit accounts and execute profitable liquidations.
 ## Overview
 
 Liquidation bots need to:
+
 1. Find accounts with low health factors
 2. Filter for liquidatable accounts
 3. Compute optimal liquidation paths
@@ -57,22 +58,22 @@ import {
   creditAccountCompressorAbi,
   AP_CREDIT_ACCOUNT_COMPRESSOR,
   VERSION_RANGE_310,
-} from '@gearbox-protocol/sdk';
+} from "@gearbox-protocol/sdk";
 
 const [accountCompressor] = sdk.addressProvider.mustGetLatest(
   AP_CREDIT_ACCOUNT_COMPRESSOR,
-  VERSION_RANGE_310
+  VERSION_RANGE_310,
 );
 
 // Find accounts with HF < 1.0 (10000 in basis points)
 const [accounts, total] = await client.readContract({
   address: accountCompressor,
   abi: creditAccountCompressorAbi,
-  functionName: 'getCreditAccounts',
+  functionName: "getCreditAccounts",
   args: [
     creditManagerAddress,
     {
-      owner: '0x0000000000000000000000000000000000000000', // Any owner
+      owner: "0x0000000000000000000000000000000000000000", // Any owner
       minHealthFactor: 0n,
       maxHealthFactor: 10000n, // HF < 1.0
       includeZeroDebt: false,
@@ -90,7 +91,7 @@ console.log(`Found ${accounts.length} accounts with HF < 1.0`);
 The `isLiquidatable` field accounts for additional protocol checks:
 
 ```typescript
-const liquidatable = accounts.filter(a => a.isLiquidatable);
+const liquidatable = accounts.filter((a) => a.isLiquidatable);
 console.log(`${liquidatable.length} are actually liquidatable`);
 
 for (const account of liquidatable) {
@@ -113,10 +114,10 @@ The compressor returns paginated results. Iterate through all pages:
 
 ```typescript
 async function getAllLiquidatableAccounts(
-  creditManager: `0x${string}`
+  creditManager: `0x${string}`,
 ): Promise<CreditAccountData[]> {
   const filter = {
-    owner: '0x0000000000000000000000000000000000000000' as const,
+    owner: "0x0000000000000000000000000000000000000000" as const,
     minHealthFactor: 0n,
     maxHealthFactor: 10000n,
     includeZeroDebt: false,
@@ -130,11 +131,11 @@ async function getAllLiquidatableAccounts(
     const [accounts, total] = await client.readContract({
       address: accountCompressor,
       abi: creditAccountCompressorAbi,
-      functionName: 'getCreditAccounts',
+      functionName: "getCreditAccounts",
       args: [creditManager, filter, offset],
     });
 
-    const liquidatable = accounts.filter(a => a.isLiquidatable);
+    const liquidatable = accounts.filter((a) => a.isLiquidatable);
     allAccounts.push(...liquidatable);
 
     offset += BigInt(accounts.length);
@@ -164,8 +165,8 @@ interface CollateralPosition {
 
 function analyzeCollateral(account: CreditAccountData): CollateralPosition[] {
   return account.tokens
-    .filter(t => t.balance > 0n)
-    .map(t => ({
+    .filter((t) => t.balance > 0n)
+    .map((t) => ({
       token: t.token,
       symbol: t.symbol,
       balance: t.balance,
@@ -176,9 +177,11 @@ function analyzeCollateral(account: CreditAccountData): CollateralPosition[] {
 }
 
 const positions = analyzeCollateral(account);
-console.log('Collateral by value:');
+console.log("Collateral by value:");
 for (const pos of positions) {
-  console.log(`  ${pos.symbol}: ${pos.valueInUnderlying} (LT: ${pos.liquidationThreshold}%)`);
+  console.log(
+    `  ${pos.symbol}: ${pos.valueInUnderlying} (LT: ${pos.liquidationThreshold}%)`,
+  );
 }
 ```
 
@@ -194,14 +197,14 @@ interface LiquidationEstimate {
 
 function estimateLiquidation(
   account: CreditAccountData,
-  premiumBps: number // e.g., 400 = 4%
+  premiumBps: number, // e.g., 400 = 4%
 ): LiquidationEstimate {
   const totalValue = account.tokens.reduce(
     (sum, t) => sum + t.balanceInUnderlying,
-    0n
+    0n,
   );
 
-  const premium = totalValue * BigInt(premiumBps) / 10000n;
+  const premium = (totalValue * BigInt(premiumBps)) / 10000n;
 
   // Simplified: assumes perfect conversion
   const estimatedProfit = totalValue - account.debt;
@@ -224,25 +227,31 @@ function estimateLiquidation(
 ### Basic Structure
 
 A liquidation multicall typically:
+
 1. Updates stale price feeds (if needed)
 2. Swaps collateral tokens to underlying
 3. Repays debt (handled by protocol)
 
 ```typescript
-import { encodeFunctionData } from 'viem';
-import { iCreditFacadeV300MulticallAbi } from '@gearbox-protocol/sdk';
+import { encodeFunctionData } from "viem";
+import { iCreditFacadeV300MulticallAbi } from "@gearbox-protocol/sdk";
 
 // Build liquidation multicall
 const calls: Array<{ target: `0x${string}`; callData: `0x${string}` }> = [];
 
-// 1. Update any stale price feeds first
-for (const feed of stalePriceFeeds) {
+// 1. Update any stale price feeds first (must be the first multicall step)
+if (stalePriceFeeds.length > 0) {
   calls.push({
     target: creditFacadeAddress,
     callData: encodeFunctionData({
       abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'onDemandPriceUpdate',
-      args: [feed.token, feed.reserve, feed.data],
+      functionName: "onDemandPriceUpdates",
+      args: [
+        stalePriceFeeds.map((feed) => ({
+          priceFeed: feed.priceFeed,
+          data: feed.data,
+        })),
+      ],
     }),
   });
 }
@@ -257,7 +266,7 @@ for (const collateral of collateralToSwap) {
     target: adapter,
     callData: encodeFunctionData({
       abi: adapterAbi,
-      functionName: 'swap',
+      functionName: "swap",
       args: [collateral.swapParams],
     }),
   });
@@ -274,7 +283,7 @@ calls.push({
   target: creditFacadeAddress,
   callData: encodeFunctionData({
     abi: iCreditFacadeV300MulticallAbi,
-    functionName: 'storeExpectedBalances',
+    functionName: "storeExpectedBalances",
     args: [[{ token: underlyingToken, amount: minExpectedOutput }]],
   }),
 });
@@ -284,7 +293,7 @@ calls.push({
   target: adapter,
   callData: encodeFunctionData({
     abi: adapterAbi,
-    functionName: 'swap',
+    functionName: "swap",
     args: [swapParams],
   }),
 });
@@ -294,7 +303,7 @@ calls.push({
   target: creditFacadeAddress,
   callData: encodeFunctionData({
     abi: iCreditFacadeV300MulticallAbi,
-    functionName: 'compareBalances',
+    functionName: "compareBalances",
     args: [],
   }),
 });
@@ -318,9 +327,9 @@ const market = sdk.marketRegister.findByCreditManager(account.creditManager);
 const hash = await walletClient.writeContract({
   address: market.creditFacade.address,
   abi: creditFacadeAbi,
-  functionName: 'liquidateCreditAccount',
+  functionName: "liquidateCreditAccount",
   args: [
-    account.addr,  // Credit account to liquidate
+    account.addr, // Credit account to liquidate
     receiverAddress, // Where to send remaining funds
     calls, // Liquidation multicall
   ],
@@ -330,7 +339,9 @@ console.log(`Liquidation submitted: ${hash}`);
 
 // Wait for confirmation
 const receipt = await client.waitForTransactionReceipt({ hash });
-console.log(`Liquidation ${receipt.status === 'success' ? 'succeeded' : 'failed'}`);
+console.log(
+  `Liquidation ${receipt.status === "success" ? "succeeded" : "failed"}`,
+);
 ```
 
 ### Handling Partial Liquidation
@@ -370,7 +381,7 @@ async function monitoringLoop() {
         }
       }
     } catch (error) {
-      console.error('Monitoring error:', error);
+      console.error("Monitoring error:", error);
     }
 
     await sleep(POLL_INTERVAL);
@@ -391,7 +402,7 @@ async function attemptLiquidation(account: CreditAccountData) {
     await client.simulateContract({
       address: creditFacadeAddress,
       abi: creditFacadeAbi,
-      functionName: 'liquidateCreditAccount',
+      functionName: "liquidateCreditAccount",
       args: [account.addr, receiverAddress, calls],
       account: liquidatorAddress,
     });
@@ -405,7 +416,7 @@ async function attemptLiquidation(account: CreditAccountData) {
     const hash = await walletClient.writeContract({
       address: creditFacadeAddress,
       abi: creditFacadeAbi,
-      functionName: 'liquidateCreditAccount',
+      functionName: "liquidateCreditAccount",
       args: [account.addr, receiverAddress, calls],
     });
 
@@ -421,6 +432,7 @@ async function attemptLiquidation(account: CreditAccountData) {
 Liquidation is competitive. Other bots are scanning the same accounts.
 
 **Strategies:**
+
 - **Speed:** Use faster RPC endpoints, optimize code paths
 - **Gas:** Pay higher gas for priority (use `maxPriorityFeePerGas`)
 - **Efficiency:** Better swap routing means higher profit, can afford more gas
@@ -431,9 +443,9 @@ Liquidation is competitive. Other bots are scanning the same accounts.
 const hash = await walletClient.writeContract({
   address: creditFacadeAddress,
   abi: creditFacadeAbi,
-  functionName: 'liquidateCreditAccount',
+  functionName: "liquidateCreditAccount",
   args: [account.addr, receiverAddress, calls],
-  maxPriorityFeePerGas: parseGwei('3'), // Higher tip
+  maxPriorityFeePerGas: parseGwei("3"), // Higher tip
 });
 ```
 
@@ -442,15 +454,15 @@ const hash = await walletClient.writeContract({
 ## Complete Example: Simple Liquidation Bot
 
 ```typescript
-import { createPublicClient, createWalletClient, http, parseGwei } from 'viem';
-import { privateKeyToAccount } from 'viem/accounts';
-import { mainnet } from 'viem/chains';
+import { createPublicClient, createWalletClient, http, parseGwei } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { mainnet } from "viem/chains";
 import {
   GearboxSDK,
   creditAccountCompressorAbi,
   AP_CREDIT_ACCOUNT_COMPRESSOR,
   VERSION_RANGE_310,
-} from '@gearbox-protocol/sdk';
+} from "@gearbox-protocol/sdk";
 
 const MIN_PROFIT_USD = 100n * 10n ** 6n; // $100 minimum profit
 
@@ -474,7 +486,7 @@ async function runLiquidationBot(creditManagerAddress: `0x${string}`) {
 
   const [accountCompressor] = sdk.addressProvider.mustGetLatest(
     AP_CREDIT_ACCOUNT_COMPRESSOR,
-    VERSION_RANGE_310
+    VERSION_RANGE_310,
   );
 
   const market = sdk.marketRegister.findByCreditManager(creditManagerAddress);
@@ -488,11 +500,11 @@ async function runLiquidationBot(creditManagerAddress: `0x${string}`) {
       const [accounts] = await client.readContract({
         address: accountCompressor,
         abi: creditAccountCompressorAbi,
-        functionName: 'getCreditAccounts',
+        functionName: "getCreditAccounts",
         args: [
           creditManagerAddress,
           {
-            owner: '0x0000000000000000000000000000000000000000',
+            owner: "0x0000000000000000000000000000000000000000",
             minHealthFactor: 0n,
             maxHealthFactor: 10000n,
             includeZeroDebt: false,
@@ -502,7 +514,7 @@ async function runLiquidationBot(creditManagerAddress: `0x${string}`) {
         ],
       });
 
-      const liquidatable = accounts.filter(a => a.isLiquidatable);
+      const liquidatable = accounts.filter((a) => a.isLiquidatable);
 
       if (liquidatable.length > 0) {
         console.log(`Found ${liquidatable.length} liquidatable accounts`);
@@ -510,7 +522,7 @@ async function runLiquidationBot(creditManagerAddress: `0x${string}`) {
         for (const target of liquidatable) {
           const totalValue = target.tokens.reduce(
             (sum, t) => sum + t.balanceInUnderlying,
-            0n
+            0n,
           );
 
           const estimatedProfit = totalValue - target.debt;
@@ -530,7 +542,7 @@ async function runLiquidationBot(creditManagerAddress: `0x${string}`) {
               await client.simulateContract({
                 address: market.creditFacade.address,
                 abi: creditFacadeAbi,
-                functionName: 'liquidateCreditAccount',
+                functionName: "liquidateCreditAccount",
                 args: [target.addr, account.address, calls],
                 account: account.address,
               });
@@ -539,9 +551,9 @@ async function runLiquidationBot(creditManagerAddress: `0x${string}`) {
               const hash = await walletClient.writeContract({
                 address: market.creditFacade.address,
                 abi: creditFacadeAbi,
-                functionName: 'liquidateCreditAccount',
+                functionName: "liquidateCreditAccount",
                 args: [target.addr, account.address, calls],
-                maxPriorityFeePerGas: parseGwei('2'),
+                maxPriorityFeePerGas: parseGwei("2"),
               });
 
               console.log(`Liquidation submitted: ${hash}`);
@@ -552,17 +564,17 @@ async function runLiquidationBot(creditManagerAddress: `0x${string}`) {
         }
       }
     } catch (error) {
-      console.error('Loop error:', error);
+      console.error("Loop error:", error);
     }
 
     // Poll every 3 seconds
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
   }
 }
 
 function buildLiquidationCalls(
   account: CreditAccountData,
-  market: MarketData
+  market: MarketData,
 ): Array<{ target: `0x${string}`; callData: `0x${string}` }> {
   const calls: Array<{ target: `0x${string}`; callData: `0x${string}` }> = [];
   const creditFacade = market.creditFacade.address;
@@ -574,7 +586,7 @@ function buildLiquidationCalls(
     if (token.token === underlying) continue; // skip underlying itself
 
     // Use Uniswap V3 adapter for swaps (simplified: hardcoded router)
-    const uniswapAdapter = market.adapters?.['UNISWAP_V3_ROUTER'];
+    const uniswapAdapter = market.adapters?.["UNISWAP_V3_ROUTER"];
     if (!uniswapAdapter) continue;
 
     // exactAllInputSingle swaps entire balance minus 1 wei
@@ -582,15 +594,17 @@ function buildLiquidationCalls(
       target: uniswapAdapter,
       callData: encodeFunctionData({
         abi: uniswapV3AdapterAbi,
-        functionName: 'exactAllInputSingle',
-        args: [{
-          tokenIn: token.token,
-          tokenOut: underlying,
-          fee: 3000, // 0.3% pool (use 500 for stablecoin pairs)
-          deadline: BigInt(Math.floor(Date.now() / 1000) + 3600),
-          rateMinRAY: 0n, // No slippage protection (simplified)
-          sqrtPriceLimitX96: 0n,
-        }],
+        functionName: "exactAllInputSingle",
+        args: [
+          {
+            tokenIn: token.token,
+            tokenOut: underlying,
+            fee: 3000, // 0.3% pool (use 500 for stablecoin pairs)
+            deadline: BigInt(Math.floor(Date.now() / 1000) + 3600),
+            rateMinRAY: 0n, // No slippage protection (simplified)
+            sqrtPriceLimitX96: 0n,
+          },
+        ],
       }),
     });
   }
@@ -610,10 +624,7 @@ If any price feeds are stale, update them at the start of your multicall:
 ```typescript
 // WRONG: Swap first, then update prices (will fail)
 // CORRECT: Update prices first, then swap
-const calls = [
-  ...priceUpdateCalls,
-  ...swapCalls,
-];
+const calls = [...priceUpdateCalls, ...swapCalls];
 ```
 
 See [Updating Price Feeds](../multicalls/updating-price-feeds.md).
@@ -635,6 +646,7 @@ try {
 ### Gas Estimation
 
 Liquidation gas costs vary based on:
+
 - Number of collateral tokens
 - Complexity of swaps
 - Price feed updates needed

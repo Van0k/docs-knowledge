@@ -10,19 +10,18 @@ The main [multicalls.md](../multicalls.md) covers the basics: SDK service helper
 
 ## Quick Reference
 
-| Operation | SDK Helper | When to Use | Guide |
-|-----------|------------|-------------|-------|
-| Add Collateral | `prepareAddCollateral()` | Deposit tokens to increase health factor | [Adding Collateral](./adding-collateral.md) |
-| Increase Debt | `prepareIncreaseDebt()` | Borrow from pool | [Debt Management](./debt-management.md) |
-| Decrease Debt | `prepareDecreaseDebt()` | Repay borrowed funds | [Debt Management](./debt-management.md) |
-| Update Quota | `prepareUpdateQuota()` | Enable/adjust quota token exposure | [Updating Quotas](./updating-quotas.md) |
-| Withdraw Collateral | `prepareWithdrawCollateral()` | Remove tokens from account | [Withdrawing Collateral](./withdrawing-collateral.md) |
-| Slippage Control | Manual encoding | Protect swaps from sandwich attacks | [Controlling Slippage](./controlling-slippage.md) |
-| External Calls | Manual encoding | Interact with Uniswap, Curve, etc. | [Making External Calls](./making-external-calls.md) |
-| Enable/Disable Token | Manual encoding | Explicit collateral management | [Enabling/Disabling Tokens](./enabling-disabling-tokens.md) |
-| Price Updates | Manual encoding | Update Pyth/Redstone feeds | [Updating Price Feeds](./updating-price-feeds.md) |
-| Check Params | Manual encoding | Optimize gas, set min health factor | [Collateral Check Params](./collateral-check-params.md) |
-| Revoke Allowances | Manual encoding | Security measure after suspicious activity | [Revoke Allowances](./revoke-allowances.md) |
+| Operation           | SDK Helper                    | When to Use                                | Guide                                                   |
+| ------------------- | ----------------------------- | ------------------------------------------ | ------------------------------------------------------- |
+| Add Collateral      | `prepareAddCollateral()`      | Deposit tokens to increase health factor   | [Adding Collateral](./adding-collateral.md)             |
+| Increase Debt       | `prepareIncreaseDebt()`       | Borrow from pool                           | [Debt Management](./debt-management.md)                 |
+| Decrease Debt       | `prepareDecreaseDebt()`       | Repay borrowed funds                       | [Debt Management](./debt-management.md)                 |
+| Update Quota        | `prepareUpdateQuota()`        | Enable/adjust quota token exposure         | [Updating Quotas](./updating-quotas.md)                 |
+| Withdraw Collateral | `prepareWithdrawCollateral()` | Remove tokens from account                 | [Withdrawing Collateral](./withdrawing-collateral.md)   |
+| Slippage Control    | Manual encoding               | Protect swaps from sandwich attacks        | [Controlling Slippage](./controlling-slippage.md)       |
+| External Calls      | Manual encoding               | Interact with Uniswap, Curve, etc.         | [Making External Calls](./making-external-calls.md)     |
+| Bot Permissions     | Manual encoding               | Grant/revoke bot access to account actions | [Setting Bot Permissions](./set-bot-permissions.md)     |
+| Price Updates       | Manual encoding               | Update Pyth/Redstone feeds                 | [Updating Price Feeds](./updating-price-feeds.md)       |
+| Check Params        | Manual encoding               | Optimize gas, set min health factor        | [Collateral Check Params](./collateral-check-params.md) |
 
 ## Page Structure
 
@@ -37,18 +36,19 @@ Each operation guide follows the same structure:
 ## SDK Helpers vs Manual Encoding
 
 **Five operations have SDK helpers** via `createCreditAccountService`:
+
 - `prepareAddCollateral(token, amount)`
 - `prepareIncreaseDebt(amount)`
 - `prepareDecreaseDebt(amount)`
 - `prepareUpdateQuota(token, change, minQuota)`
 - `prepareWithdrawCollateral(token, amount, to)`
 
-**Six operations require manual encoding** with viem's `encodeFunctionData`:
+**These operations require manual encoding** with viem's `encodeFunctionData`:
+
 - `storeExpectedBalances` / `compareBalances`
-- `enableToken` / `disableToken`
-- `onDemandPriceUpdate`
+- `onDemandPriceUpdates`
 - `setFullCheckParams`
-- `revokeAdapterAllowances`
+- `setBotPermissions`
 
 All manual encoding uses `iCreditFacadeV300MulticallAbi` from `@gearbox-protocol/sdk`.
 

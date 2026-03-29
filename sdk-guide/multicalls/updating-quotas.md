@@ -25,6 +25,7 @@ Quotas control how much of a token's value counts as collateral. Without a quota
 4. Quota interest accrues based on your quota amount
 
 **Key parameters:**
+
 - `token` - The quota token address
 - `quotaChange` - Delta to apply (positive = increase, negative = decrease)
 - `minQuota` - Minimum acceptable resulting quota (prevents partial fills)
@@ -34,7 +35,7 @@ The `minQuota` parameter protects you: if the pool can only give you 80% of your
 ## How
 
 ```typescript
-import { GearboxSDK, createCreditAccountService } from '@gearbox-protocol/sdk';
+import { GearboxSDK, createCreditAccountService } from "@gearbox-protocol/sdk";
 
 const sdk = await GearboxSDK.attach({ client, marketConfigurators: [] });
 const service = createCreditAccountService(sdk, 310);
@@ -56,9 +57,7 @@ await market.creditFacade.write.multicall([creditAccountAddress, calls]);
 // Decrease quota by 20,000 (negative change)
 const decrease = -20_000n * 10n ** 6n;
 
-const calls = [
-  service.prepareUpdateQuota(wethAddress, decrease, 0n),
-];
+const calls = [service.prepareUpdateQuota(wethAddress, decrease, 0n)];
 ```
 
 ### Zero Quota Entirely
@@ -69,9 +68,7 @@ Pass `type(int96).min` to disable quota completely:
 // int96 minimum value
 const INT96_MIN = BigInt.asIntN(96, -1n * 2n ** 95n);
 
-const calls = [
-  service.prepareUpdateQuota(wethAddress, INT96_MIN, 0n),
-];
+const calls = [service.prepareUpdateQuota(wethAddress, INT96_MIN, 0n)];
 ```
 
 ### Common Pattern: Enable Quota After Swap
@@ -85,7 +82,7 @@ const calls = [
     target: uniswapV3Adapter,
     callData: encodeFunctionData({
       abi: uniswapV3AdapterAbi,
-      functionName: 'exactInputSingle',
+      functionName: "exactInputSingle",
       args: [swapParams],
     }),
   },
@@ -150,12 +147,9 @@ If your account has zero debt, quota updates fail. You must have active debt to 
 
 ### Quota Tokens vs Non-Quota Tokens
 
-Not all tokens are quota tokens. Non-quota tokens:
-- Are enabled/disabled via `enableToken`/`disableToken`
-- Don't require quota to count as collateral
-- Have different risk parameters
+Not all tokens are quota tokens. Non-underlying tokens that use **quota** must have a non-zero quota to count as collateral; quota changes enable or disable that token for collateral purposes. The underlying asset is treated separately by default.
 
-Check if a token is quota-based by examining the Credit Manager configuration.
+Check whether a token is quota-based and how it is priced using the Credit Manager and market configuration.
 
 ### Forbidden Tokens Block Quota Increases
 
@@ -165,4 +159,4 @@ If your account has forbidden tokens enabled, you cannot increase any quotas. Di
 
 - [Debt Management](./debt-management.md) - Quotas require active debt
 - [Adding Collateral](./adding-collateral.md) - Often combined with quota updates
-- [Enabling/Disabling Tokens](./enabling-disabling-tokens.md) - For non-quota tokens
+- [Setting Bot Permissions](./set-bot-permissions.md) - Delegate quota updates to bots

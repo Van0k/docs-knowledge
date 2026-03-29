@@ -29,9 +29,12 @@ If you know your USDC and WETH cover the debt, pass their masks as hints. The ch
 ### Basic Usage with Hints
 
 ```typescript
-import { encodeFunctionData } from 'viem';
-import { iCreditFacadeV300MulticallAbi, creditManagerAbi } from '@gearbox-protocol/sdk';
-import { getContract } from 'viem';
+import { encodeFunctionData } from "viem";
+import {
+  iCreditFacadeV300MulticallAbi,
+  creditManagerAbi,
+} from "@gearbox-protocol/sdk";
+import { getContract } from "viem";
 
 const creditManager = getContract({
   address: cmAddress,
@@ -49,10 +52,10 @@ const calls = [
     target: creditFacadeAddress,
     callData: encodeFunctionData({
       abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'setFullCheckParams',
+      functionName: "setFullCheckParams",
       args: [
-        [usdcMask, wethMask],  // Check these tokens first
-        10000,                  // minHealthFactor: 1.0 (10000 bps)
+        [usdcMask, wethMask], // Check these tokens first
+        10000, // minHealthFactor: 1.0 (10000 bps)
       ],
     }),
   },
@@ -75,9 +78,9 @@ const calls = [
     target: creditFacadeAddress,
     callData: encodeFunctionData({
       abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'setFullCheckParams',
+      functionName: "setFullCheckParams",
       args: [
-        [],      // No hints
+        [], // No hints
         MIN_HF_120,
       ],
     }),
@@ -89,13 +92,13 @@ const calls = [
 ### Complete Example: Gas-Optimized Multicall
 
 ```typescript
-import { encodeFunctionData, getContract } from 'viem';
+import { encodeFunctionData, getContract } from "viem";
 import {
   GearboxSDK,
   createCreditAccountService,
   iCreditFacadeV300MulticallAbi,
   creditManagerAbi,
-} from '@gearbox-protocol/sdk';
+} from "@gearbox-protocol/sdk";
 
 const sdk = await GearboxSDK.attach({ client, marketConfigurators: [] });
 const service = createCreditAccountService(sdk, 310);
@@ -116,10 +119,10 @@ const calls = [
     target: market.creditFacade.address,
     callData: encodeFunctionData({
       abi: iCreditFacadeV300MulticallAbi,
-      functionName: 'setFullCheckParams',
+      functionName: "setFullCheckParams",
       args: [
-        [usdcMask],  // USDC covers debt, check it first
-        10500,       // Require 1.05 HF minimum
+        [usdcMask], // USDC covers debt, check it first
+        10500, // Require 1.05 HF minimum
       ],
     }),
   },
@@ -143,11 +146,11 @@ The hints array takes token **masks**, not addresses:
 
 ```typescript
 // WRONG - passing addresses
-args: [[usdcAddress, wethAddress], 10000]
+args: [[usdcAddress, wethAddress], 10000];
 
 // CORRECT - passing masks
 const usdcMask = await creditManager.read.getTokenMaskOrRevert([usdcAddress]);
-args: [[usdcMask], 10000]
+args: [[usdcMask], 10000];
 ```
 
 ### Hints Are Optimization, Not Guarantee
@@ -165,11 +168,11 @@ You cannot set a health factor below 1.0:
 
 ```typescript
 // WRONG - less than 10000 reverts
-args: [[], 9500]  // Reverts!
+args: [[], 9500]; // Reverts!
 
 // CORRECT - must be >= 10000
-args: [[], 10000]  // Exactly 1.0
-args: [[], 11000]  // 1.1
+args: [[], 10000]; // Exactly 1.0
+args: [[], 11000]; // 1.1
 ```
 
 ### Hints Don't Help Small Accounts
@@ -182,10 +185,10 @@ Tokens are checked in the order you provide:
 
 ```typescript
 // Check WETH first, then USDC
-args: [[wethMask, usdcMask], 10000]
+args: [[wethMask, usdcMask], 10000];
 
 // Check USDC first, then WETH
-args: [[usdcMask, wethMask], 10000]
+args: [[usdcMask, wethMask], 10000];
 ```
 
 Put your highest-value collateral first for best gas savings.
@@ -225,13 +228,13 @@ Use hints for gas optimization AND min HF for risk management:
 
 ```typescript
 args: [
-  [primaryCollateralMask, secondaryCollateralMask],  // Gas optimization
-  11000,  // Risk management: require 1.1 HF
-]
+  [primaryCollateralMask, secondaryCollateralMask], // Gas optimization
+  11000, // Risk management: require 1.1 HF
+];
 ```
 
 ## See Also
 
-- [Enabling/Disabling Tokens](./enabling-disabling-tokens.md) - Affects which tokens are checked
+- [Updating Quotas](./updating-quotas.md) - Which quoted tokens contribute to collateral checks
 - [Price Updates](./updating-price-feeds.md) - Oracle calls that hints can skip
 - [Debt Management](./debt-management.md) - Debt determines what TWV must cover
