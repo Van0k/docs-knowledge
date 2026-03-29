@@ -24,11 +24,11 @@ Without a quota, holding a token on a Credit Account with debt risks losing it t
 3. If quota goes to zero, token is disabled as collateral
 4. Quota fees are applied based on the change
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `token` | address | The quoted token (cannot be underlying) |
-| `quotaChange` | int96 | Delta in underlying units (negative to reduce) |
-| `minQuota` | uint96 | Minimum resulting quota to not revert |
+| Parameter     | Type    | Description                                    |
+| ------------- | ------- | ---------------------------------------------- |
+| `token`       | address | The quoted token (cannot be underlying)        |
+| `quotaChange` | int96   | Delta in underlying units (negative to reduce) |
+| `minQuota`    | uint96  | Minimum resulting quota to not revert          |
 
 ## How
 
@@ -224,4 +224,4 @@ calls[2] = MultiCall({
 
 - [Adding Collateral](./adding-collateral.md) - Add tokens before setting quota
 - [Debt Management](./debt-management.md) - Debt required for quota updates
-- [Enabling/Disabling Tokens](./enabling-disabling-tokens.md) - Token state management
+- [Setting Bot Permissions](./set-bot-permissions.md) - Delegate quota updates to bots

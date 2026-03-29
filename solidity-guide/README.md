@@ -10,11 +10,11 @@ Integrate directly with Gearbox contracts from your Solidity code. This guide co
 
 ## What You'll Learn
 
-| Topic | Description |
-|-------|-------------|
-| Credit Accounts | Contract discovery, CreditFacade, CreditManager interactions |
-| Multicall Encoding | Build and execute multicalls in Solidity |
-| Pool Operations | Deposit, withdraw, and read pool state |
+| Topic              | Description                                                  |
+| ------------------ | ------------------------------------------------------------ |
+| Credit Accounts    | Contract discovery, CreditFacade, CreditManager interactions |
+| Multicall Encoding | Build and execute multicalls in Solidity                     |
+| Pool Operations    | Deposit, withdraw, and read pool state                       |
 
 ## Guide Structure
 
@@ -36,13 +36,13 @@ import {IPoolV3} from "@gearbox-protocol/core-v3/contracts/interfaces/IPoolV3.so
 
 ## When to Use Solidity Integration
 
-| Use Case | Recommended |
-|----------|-------------|
-| On-chain protocol integration | Yes |
-| Building adapters | Yes |
-| Composable strategies | Yes |
-| Backend services | No (use SDK Guide) |
-| Frontend applications | No (use SDK Guide) |
+| Use Case                      | Recommended        |
+| ----------------------------- | ------------------ |
+| On-chain protocol integration | Yes                |
+| Building adapters             | Yes                |
+| Composable strategies         | Yes                |
+| Backend services              | No (use SDK Guide) |
+| Frontend applications         | No (use SDK Guide) |
 
 For TypeScript/JavaScript applications, see the [SDK Guide](../sdk-guide/README.md).
 
@@ -62,18 +62,17 @@ For conceptual background on how Gearbox works:
 
 Complete reference for each multicall operation with Solidity examples:
 
-| Operation | Description |
-|-----------|-------------|
-| [Adding Collateral](multicalls/adding-collateral.md) | Transfer tokens to credit account |
-| [Debt Management](multicalls/debt-management.md) | Borrow and repay |
-| [Updating Quotas](multicalls/updating-quotas.md) | Manage collateral quotas |
-| [Withdrawing Collateral](multicalls/withdrawing-collateral.md) | Remove tokens from account |
-| [Controlling Slippage](multicalls/controlling-slippage.md) | Protect against price movement |
-| [Making External Calls](multicalls/making-external-calls.md) | Interact with DeFi protocols via adapters |
-| [Enabling/Disabling Tokens](multicalls/enabling-disabling-tokens.md) | Manage active collateral |
-| [Updating Price Feeds](multicalls/updating-price-feeds.md) | On-demand oracle updates (Pyth, Redstone) |
-| [Collateral Check Params](multicalls/collateral-check-params.md) | Optimize health checks with hints |
-| [Revoke Allowances](multicalls/revoke-allowances.md) | Security cleanup |
+| Operation                                                        | Description                               |
+| ---------------------------------------------------------------- | ----------------------------------------- |
+| [Adding Collateral](multicalls/adding-collateral.md)             | Transfer tokens to credit account         |
+| [Debt Management](multicalls/debt-management.md)                 | Borrow and repay                          |
+| [Updating Quotas](multicalls/updating-quotas.md)                 | Manage collateral quotas                  |
+| [Withdrawing Collateral](multicalls/withdrawing-collateral.md)   | Remove tokens from account                |
+| [Controlling Slippage](multicalls/controlling-slippage.md)       | Protect against price movement            |
+| [Making External Calls](multicalls/making-external-calls.md)     | Interact with DeFi protocols via adapters |
+| [Updating Price Feeds](multicalls/updating-price-feeds.md)       | On-demand oracle updates (Pyth, Redstone) |
+| [Collateral Check Params](multicalls/collateral-check-params.md) | Optimize health checks with hints         |
+| [Setting Bot Permissions](multicalls/set-bot-permissions.md)     | Configure bot access to account actions   |
 
 See [Multicalls Overview](multicalls.md) for the diff pattern and complete encoding examples.
 
@@ -81,9 +80,9 @@ See [Multicalls Overview](multicalls.md) for the diff pattern and complete encod
 
 Integration-specific guides for common development scenarios:
 
-| Building | Guide | Focus |
-|----------|-------|-------|
-| New DeFi Adapter | [Adapter Development](use-cases/adapter-development.md) | AbstractAdapter, security patterns, diff functions |
-| Strategy Contract | [Protocol Integration](use-cases/protocol-integration.md) | Multicall building, access control, automation |
-| Core Extensions | [Core Extension](use-cases/core-extension.md) | Extending core contracts, advanced customizations |
-| Liquidation Contract | [Liquidation Bots](use-cases/liquidation-bots.md) | On-chain liquidation, flash loans, keeper integration |
+| Building             | Guide                                                     | Focus                                                 |
+| -------------------- | --------------------------------------------------------- | ----------------------------------------------------- |
+| New DeFi Adapter     | [Adapter Development](use-cases/adapter-development.md)   | AbstractAdapter, security patterns, diff functions    |
+| Strategy Contract    | [Protocol Integration](use-cases/protocol-integration.md) | Multicall building, access control, automation        |
+| Core Extensions      | [Core Extension](use-cases/core-extension.md)             | Extending core contracts, advanced customizations     |
+| Liquidation Contract | [Liquidation Bots](use-cases/liquidation-bots.md)         | On-chain liquidation, flash loans, keeper integration |

@@ -273,6 +273,6 @@ calls[0] = MultiCall({
 
 ## See Also
 
-- [Enabling/Disabling Tokens](./enabling-disabling-tokens.md) - Affects which tokens are checked
+- [Updating Quotas](./updating-quotas.md) - Determines which quoted tokens contribute to collateral checks
 - [Updating Price Feeds](./updating-price-feeds.md) - Oracle calls that hints can skip
 - [Debt Management](./debt-management.md) - Debt determines what TWV must cover

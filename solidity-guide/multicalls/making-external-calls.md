@@ -218,11 +218,11 @@ The first adapter call sets `EXTERNAL_CONTRACT_WAS_CALLED_FLAG`:
 ### Token Enabling
 
 Adapters automatically enable output tokens. After a swap:
+
 - Output token mask is set on the Credit Account
 - Token counts toward collateral (if it has quota or is underlying)
 
 ## See Also
 
 - [Controlling Slippage](./controlling-slippage.md) - Protect swap outputs
-- [Enabling/Disabling Tokens](./enabling-disabling-tokens.md) - Token state management
-- [Updating Quotas](./updating-quotas.md) - Enable output tokens as collateral
+- [Updating Quotas](./updating-quotas.md) - Ensure received quoted tokens are collateralized

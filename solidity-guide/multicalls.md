@@ -14,10 +14,9 @@ For comprehensive documentation of each operation:
 - [Withdrawing Collateral](multicalls/withdrawing-collateral.md) - Safe pricing and health impact
 - [Controlling Slippage](multicalls/controlling-slippage.md) - Balance delta protection
 - [Making External Calls](multicalls/making-external-calls.md) - Adapter interaction patterns
-- [Enabling/Disabling Tokens](multicalls/enabling-disabling-tokens.md) - Token mask management
 - [Updating Price Feeds](multicalls/updating-price-feeds.md) - On-demand oracle data
 - [Collateral Check Params](multicalls/collateral-check-params.md) - Health check optimization
-- [Revoke Allowances](multicalls/revoke-allowances.md) - Security cleanup
+- [Setting Bot Permissions](multicalls/set-bot-permissions.md) - Configure bot access control
 
 ## The MultiCall Structure
 
@@ -38,24 +37,24 @@ import {ICreditFacadeV3Multicall} from "@gearbox-protocol/core-v3/contracts/inte
 
 ### Protocol Operations
 
-| Function | Signature |
-|----------|-----------|
-| `addCollateral` | `(address token, uint256 amount)` |
+| Function                  | Signature                                                                          |
+| ------------------------- | ---------------------------------------------------------------------------------- |
+| `addCollateral`           | `(address token, uint256 amount)`                                                  |
 | `addCollateralWithPermit` | `(address token, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s)` |
-| `withdrawCollateral` | `(address token, uint256 amount, address to)` |
-| `increaseDebt` | `(uint256 amount)` |
-| `decreaseDebt` | `(uint256 amount)` |
-| `updateQuota` | `(address token, int96 quotaChange, uint96 minQuota)` |
+| `withdrawCollateral`      | `(address token, uint256 amount, address to)`                                      |
+| `increaseDebt`            | `(uint256 amount)`                                                                 |
+| `decreaseDebt`            | `(uint256 amount)`                                                                 |
+| `updateQuota`             | `(address token, int96 quotaChange, uint96 minQuota)`                              |
 
 ### Safety Operations
 
-| Function | Signature |
-|----------|-----------|
-| `onDemandPriceUpdate` | `(address token, bool reserve, bytes data)` |
-| `storeExpectedBalances` | `(BalanceDelta[] deltas)` |
-| `compareBalances` | `()` |
-| `setFullCheckParams` | `(uint256[] hints, uint16 minHF)` |
-| `setBotPermissions` | `(address bot, uint192 permissions)` |
+| Function                | Signature                                   |
+| ----------------------- | ------------------------------------------- |
+| `onDemandPriceUpdate`   | `(address token, bool reserve, bytes data)` |
+| `storeExpectedBalances` | `(BalanceDelta[] deltas)`                   |
+| `compareBalances`       | `()`                                        |
+| `setFullCheckParams`    | `(uint256[] hints, uint16 minHF)`           |
+| `setBotPermissions`     | `(address bot, uint192 permissions)`        |
 
 ## Encoding Multicalls
 

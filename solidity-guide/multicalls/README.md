@@ -10,19 +10,18 @@ The main [multicalls.md](../multicalls.md) covers the fundamentals: MultiCall st
 
 ## Quick Reference
 
-| Operation | Function | When to Use | Guide |
-|-----------|----------|-------------|-------|
-| Add Collateral | `addCollateral` | Deposit tokens to increase health factor | [Adding Collateral](./adding-collateral.md) |
-| Increase Debt | `increaseDebt` | Borrow from pool | [Debt Management](./debt-management.md) |
-| Decrease Debt | `decreaseDebt` | Repay borrowed funds | [Debt Management](./debt-management.md) |
-| Update Quota | `updateQuota` | Enable/adjust quota token exposure | [Updating Quotas](./updating-quotas.md) |
-| Withdraw Collateral | `withdrawCollateral` | Remove tokens from account | [Withdrawing Collateral](./withdrawing-collateral.md) |
-| Slippage Control | `storeExpectedBalances` / `compareBalances` | Protect swaps from sandwich attacks | [Controlling Slippage](./controlling-slippage.md) |
-| External Calls | Adapter-specific | Interact with Uniswap, Curve, etc. | [Making External Calls](./making-external-calls.md) |
-| Enable/Disable Token | `enableToken` / `disableToken` | Explicit collateral management | [Enabling/Disabling Tokens](./enabling-disabling-tokens.md) |
-| Price Updates | `onDemandPriceUpdate` | Update Pyth/Redstone feeds | [Updating Price Feeds](./updating-price-feeds.md) |
-| Check Params | `setFullCheckParams` | Optimize gas, set min health factor | [Collateral Check Params](./collateral-check-params.md) |
-| Revoke Allowances | `revokeAdapterAllowances` | Security measure after suspicious activity | [Revoke Allowances](./revoke-allowances.md) |
+| Operation           | Function                                    | When to Use                                | Guide                                                   |
+| ------------------- | ------------------------------------------- | ------------------------------------------ | ------------------------------------------------------- |
+| Add Collateral      | `addCollateral`                             | Deposit tokens to increase health factor   | [Adding Collateral](./adding-collateral.md)             |
+| Increase Debt       | `increaseDebt`                              | Borrow from pool                           | [Debt Management](./debt-management.md)                 |
+| Decrease Debt       | `decreaseDebt`                              | Repay borrowed funds                       | [Debt Management](./debt-management.md)                 |
+| Update Quota        | `updateQuota`                               | Enable/adjust quota for a token exposure         | [Updating Quotas](./updating-quotas.md)                 |
+| Withdraw Collateral | `withdrawCollateral`                        | Remove tokens from account                 | [Withdrawing Collateral](./withdrawing-collateral.md)   |
+| Slippage Control    | `storeExpectedBalances` / `compareBalances` | Protect swaps from sandwich attacks        | [Controlling Slippage](./controlling-slippage.md)       |
+| External Calls      | Adapter-specific                            | Interact with Uniswap, Curve, etc.         | [Making External Calls](./making-external-calls.md)     |
+| Price Updates       | `onDemandPriceUpdate`                       | Update Pyth/Redstone feeds                 | [Updating Price Feeds](./updating-price-feeds.md)       |
+| Check Params        | `setFullCheckParams`                        | Optimize gas, set min health factor        | [Collateral Check Params](./collateral-check-params.md) |
+| Bot Permissions     | `setBotPermissions`                         | Grant/revoke bot access to account actions | [Setting Bot Permissions](./set-bot-permissions.md)     |
 
 ## Page Structure
 
@@ -59,7 +58,7 @@ ICreditFacadeV3(creditFacade).multicall(creditAccount, calls);
 
 Some operations have strict ordering rules:
 
-1. **Price updates (`onDemandPriceUpdate`)** - Must be first in the calls array
+1. **Price updates (`onDemandPriceUpdates`)** - Must be first in the calls array
 2. **Collateral check params (`setFullCheckParams`)** - Should be early, affects final check
 3. **External calls** - Can be anywhere after price updates
 4. **Slippage checks** - `storeExpectedBalances` before swaps, `compareBalances` after
@@ -77,9 +76,6 @@ import {ICreditManagerV3} from "@gearbox-protocol/core-v3/contracts/interfaces/I
 
 // For slippage protection
 import {BalanceDelta} from "@gearbox-protocol/core-v3/contracts/libraries/BalancesLogic.sol";
-
-// For allowance revocation
-import {RevocationPair} from "@gearbox-protocol/core-v3/contracts/interfaces/ICreditFacadeV3Multicall.sol";
 
 // Adapter interfaces (examples)
 import {IUniswapV3Adapter} from "@gearbox-protocol/integrations-v3/contracts/interfaces/uniswap/IUniswapV3Adapter.sol";

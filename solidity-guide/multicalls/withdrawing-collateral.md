@@ -151,4 +151,4 @@ withdrawCollateral(token, amount, anotherContract);
 
 - [Adding Collateral](./adding-collateral.md) - The reverse operation
 - [Debt Management](./debt-management.md) - Repay debt before large withdrawals
-- [Enabling/Disabling Tokens](./enabling-disabling-tokens.md) - Token state management
+- [Updating Quotas](./updating-quotas.md) - Token collateral management through quota updates
